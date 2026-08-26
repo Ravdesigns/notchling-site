@@ -29,8 +29,20 @@ PYEOF
     | plutil -extract CFBundleShortVersionString raw -o - - 2>/dev/null > "$SRC/version.txt" || true
 fi
 
-cd "$SRC"
+# Each host must be internally consistent. zopcloud is the canonical host, so the
+# source files name it: but while zopcloud lags a rebuild, the Vercel page would
+# publish its own zip's sha next to a curl line fetching zopcloud's older zip. A
+# visitor who follows the trust instructions then sees a mismatch and reasonably
+# concludes the download was tampered with. So the Vercel copy is deployed pointing
+# at itself. Nothing is committed: the swap happens in a staging copy.
+STAGE=$(mktemp -d)
+/usr/bin/rsync -a --exclude .vercel --exclude .git "$SRC/" "$STAGE/"
+/usr/bin/sed -i '' 's|notchling\.zopcloud\.zop\.dev|notchling.vercel.app|g' "$STAGE/index.html" "$STAGE/get.sh"
+cp -R "$SRC/.vercel" "$STAGE/.vercel" 2>/dev/null || true
+
+cd "$STAGE"
 vercel --prod --yes --scope team-11199 >/dev/null 2>&1
+cd "$SRC"; rm -rf "$STAGE"
 
 B=https://notchling.vercel.app
 for u in / /get.sh /Notchling.zip /version.txt /share.png; do
