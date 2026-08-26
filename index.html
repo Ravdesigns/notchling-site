@@ -157,7 +157,7 @@
 <nav><div class="wrap">
   <a class="back" href="https://crew-deskmates.vercel.app/">← all widgets</a>
   <div class="navlinks">
-    <a href="#toys">Toys</a><a href="#get">Get it</a>
+    <a href="#toys">Toys</a><a href="#pricing">Pricing</a><a href="#get">Get it</a>
     <a class="btn buy" data-buy="free" style="padding:9px 18px">Download</a>
   </div>
 </div></nav>
@@ -232,14 +232,51 @@
   </div>
 </div></section>
 
+<section id="pricing" class="center"><div class="wrap">
+  <div class="reveal">
+    <div class="eyebrow">Pricing</div>
+    <h2 style="margin-top:11px">Free to live with &middot; Pro to put to work</h2>
+    <p class="lead" style="margin-top:14px">The creature is free and stays free. Pro is the
+      utility layer — the things other notch apps charge ten to thirty dollars for.</p>
+  </div>
+  <div class="prices reveal">
+    <div class="price">
+      <div class="pn">Notchling</div><div class="amt">$0</div><div class="sm">free, forever</div>
+      <ul>
+        <li>The creature: watches your cursor, blinks, naps</li>
+        <li>Holds files, links, text &amp; screenshots in its mouth</li>
+        <li>Feels your Mac: battery, camera, mic, Caps Lock, disk</li>
+        <li>Glances down when a Claude Code agent needs you</li>
+        <li>Drag it aside &middot; hide it to a bare notch</li>
+      </ul>
+      <a class="btn light buy" data-buy="free">Download free</a>
+    </div>
+    <div class="price pro">
+      <span class="badge">POPULAR</span>
+      <div class="pn">Notchling Pro</div><div class="amt">$12 <small>once</small></div>
+      <div class="sm" style="color:oklch(62% .01 62)">one-time &middot; lifetime updates</div>
+      <ul>
+        <li><b>Chew a file</b>: to JPEG, to PNG, or smaller</li>
+        <li><b>Read the text</b> out of any screenshot, on-device</li>
+        <li>Swallow timers — 5, 15 or 25 minutes</li>
+        <li>Music: prev / play / next, scroll to scrub</li>
+        <li>Weather scenes — your sky as a living panel</li>
+        <li>Watch Downloads &middot; meeting whispers</li>
+      </ul>
+      <a class="btn buy" data-buy="pro">Get Notchling Pro</a>
+    </div>
+  </div>
+</div></section>
+
 <section id="get" class="center"><div class="wrap reveal">
   <h2>Move something in</h2>
-  <p class="lead">Free. Native Swift, no account, nothing leaves your Mac.</p>
+  <p class="lead">Free to keep. Native Swift, no account, nothing leaves your Mac.</p>
   <div class="cta" style="margin-top:24px">
-    <a class="btn buy" data-buy="free">Download Notchling</a>
-    <a class="btn light" href="https://crew-deskmates.vercel.app/crew/">See Crew →</a>
+    <a class="btn buy" data-buy="free">Download free</a>
+    <a class="btn light buy" data-buy="pro">Buy Pro &middot; $12</a>
   </div>
-  <div class="micro">Not notarised yet — the download sheet has a one-line terminal install that skips the warning entirely, with the SHA-256 beside it.</div>
+  <div class="micro">Not notarised yet — the download sheet has a one-line terminal install
+    that skips the warning entirely, with the SHA-256 beside it.</div>
 </div></section>
 
 </main>
@@ -247,10 +284,27 @@
 <div class="modal" id="modal" hidden>
   <div class="sheet">
     <button class="x" id="mx" aria-label="Close">✕</button>
+    <div id="m-pro" hidden>
+      <div class="peek">🐣</div>
+      <h3>Notchling Pro &middot; $12</h3>
+      <p>One-time, lifetime updates, no subscription. Unlocks chewing files, reading
+        text out of screenshots, timers, music controls, weather scenes, and the two
+        watchers.</p>
+      <ol>
+        <li>Install the free app first — Pro unlocks inside it.</li>
+        <li>Right-click the notch &rarr; <b>Enter licence key…</b> and copy the
+          8-character code it shows for this Mac.</li>
+        <li>Mail me that code. I send back a key that works only on your Mac.</li>
+      </ol>
+      <a class="btn" id="probtn" href="#">Email me for a key</a>
+      <p class="fine" style="margin-top:9px">No card form, no processor yet — it's a person
+        replying to you. Usually within a day.</p>
+      <p class="fine">Already have a key? Right-click the notch &rarr; Enter licence key…</p>
+    </div>
     <div id="m-free">
       <div class="peek">🐣</div>
       <h3>Download Notchling</h3>
-      <p>Free, forever. macOS 13+, Apple Silicon or Intel.</p>
+      <p>Free to keep. macOS 13+, Apple Silicon or Intel. Pro is $12, once.</p>
       <ol>
         <li>Unzip and drag <b>Notchling</b> to /Applications.</li>
         <li>First launch: right-click it → <b>Open</b>.</li>
@@ -277,6 +331,22 @@
 </div></footer>
 
 <script src="assets/site.js"></script>
+<script>
+/* The Pro button is a prefilled mail link: there is no checkout yet, and a licence
+   is minted by hand against the buyer's machine code. When a processor exists, set
+   CHECKOUT in site.js and this becomes a redirect instead. */
+(function(){
+  var b = document.getElementById('probtn');
+  if (!b) return;
+  var subject = encodeURIComponent("Notchling Pro — I'd like a key ($12)");
+  var body = encodeURIComponent(
+    "Hi Ravindra,\n\nI'd like Notchling Pro ($12 one-time).\n\n" +
+    "Name (for the licence):\n" +
+    "This Mac's 8-character code (right-click the notch \u2192 Enter licence key\u2026):\n\n" +
+    "Thanks!");
+  b.href = "mailto:" + (document.body.dataset.mail || "") + "?subject=" + subject + "&body=" + body;
+})();
+</script>
 <script>
 (function(){
   var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
