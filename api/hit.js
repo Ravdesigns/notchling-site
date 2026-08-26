@@ -16,9 +16,15 @@
 //
 // `install` is the tally that matters most: the curl one-liner never loads the
 // page, so no JavaScript analytics product can see it at all.
-import { put, list } from '@vercel/blob';
+import { put, list, del } from '@vercel/blob';
 
 const ROOT = 'notchling/ev';
+
+// Events before this date were my pre-launch testing. They stay in storage (the
+// Blob token is redacted by `vercel env pull` and injected via OIDC at runtime, so
+// nothing local can delete them) but they are excluded from every total, which is
+// the same thing as far as the dashboard is concerned.
+const COUNT_FROM = '2026-08-27';
 const EVENTS = ['visit', 'download', 'install'];
 
 // Coarse hostname only — never a full URL or query string, which can carry
@@ -43,6 +49,7 @@ async function tally() {
       if (p.length < 6) continue;
       const [, , date, event, host] = p;
       if (!EVENTS.includes(event)) continue;
+      if (date < COUNT_FROM) continue;   // pre-launch test noise
       const key = event === 'visit' ? 'visits' : event === 'download' ? 'downloads' : 'installs';
       out[key]++;
       out.days[date] = out.days[date] || { visits: 0, downloads: 0, installs: 0 };
@@ -63,6 +70,22 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') {
       res.setHeader('Cache-Control', 'no-store');
       return res.status(200).json({ ok: true, ...(await tally()) });
+    }
+
+    // Key-guarded reset. Only usable if NL_ADMIN_KEY is set by hand in the Vercel
+    // dashboard — the CLI would not store a value for it. Without that, this always
+    // 403s, which is the safe default. COUNT_FROM above is what actually hides the
+    // pre-launch test events.
+    if (req.query.reset) {
+      const key = process.env.NL_ADMIN_KEY || '';
+      if (!key || req.query.reset !== key) return res.status(403).json({ ok: false });
+      let cursor, n = 0;
+      do {
+        const page = await list({ prefix: `${ROOT}/`, limit: 1000, cursor });
+        if (page.blobs.length) { await del(page.blobs.map(b => b.url)); n += page.blobs.length; }
+        cursor = page.hasMore ? page.cursor : undefined;
+      } while (cursor);
+      return res.status(200).json({ ok: true, cleared: n });
     }
 
     const e = String(req.query.e || '');
