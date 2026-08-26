@@ -151,8 +151,14 @@
   /* Pro marker in the feature grid. It exists because the grid used to describe
      the paid features in the same voice as the free ones, and pricing further down
      then contradicted it. Quiet on purpose: a label, not a badge. */
+  /* the back link was a 15px-tall tap target on a phone, well under the 44px
+     Apple asks for. Padding only: the visual weight is unchanged. */
+  @media (max-width: 560px){
+    .top a[href^="https://crew"], footer a[href^="https://crew"]{
+      display:inline-block;padding:11px 4px}
+  }
   .tag{display:inline-block;vertical-align:2px;margin-left:7px;padding:2px 6px;
-    font:600 9.5px/1 var(--mono,ui-monospace,monospace);letter-spacing:.09em;
+    font:600 10.5px/1 var(--mono,ui-monospace,monospace);letter-spacing:.08em;
     text-transform:uppercase;color:var(--ink2,#6B655F);
     border:1px solid color-mix(in oklab, currentColor 28%, transparent);
     border-radius:999px}
