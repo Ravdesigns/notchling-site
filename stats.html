@@ -62,7 +62,12 @@
 </div>
 <script>
 (function(){
-  var API = "/api/hit";
+  /* Absolute, not relative. The counter is a Vercel serverless function, and `api/`
+     is excluded from the container image (nginx cannot run it), so on the zopcloud
+     host a relative "/api/hit" hits the 404 page, returns HTML, and this dashboard
+     reports "could not reach the counter" on the very host we launch from. The page
+     beacon in index.html already posts to the absolute URL for the same reason. */
+  var API = "https://notchling.vercel.app/api/hit";
   function n(x){ return (x||0).toLocaleString(); }
   fetch(API, { cache: "no-store" }).then(function(r){ return r.json(); }).then(function(s){
     document.getElementById("v").textContent = n(s.visits);
