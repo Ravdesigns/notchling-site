@@ -17,7 +17,10 @@ RUN rm -f /usr/share/nginx/html/Dockerfile \
           /usr/share/nginx/html/vercel.json \
           /usr/share/nginx/html/deploy.sh \
           /usr/share/nginx/html/DEPLOY.md \
-    && rm -rf /usr/share/nginx/html/.vercel
+          /usr/share/nginx/html/package.json \
+    && rm -rf /usr/share/nginx/html/.vercel \
+              /usr/share/nginx/html/api \
+              /usr/share/nginx/html/node_modules
 
 EXPOSE 8080
 

@@ -3,3 +3,6 @@
 .gitignore
 deploy.sh
 DEPLOY.md
+api
+package.json
+node_modules

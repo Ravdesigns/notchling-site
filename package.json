@@ -1,0 +1,5 @@
+{
+  "name": "notchling-site",
+  "private": true,
+  "dependencies": { "@vercel/blob": "2.4.0" }
+}

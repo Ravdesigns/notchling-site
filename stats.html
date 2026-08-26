@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Notchling — launch numbers</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='25' font-size='26'>📈</text></svg>">
+<link rel="stylesheet" href="assets/site.css">
+<style>
+  body{padding:0}
+  .wrap{max-width:760px;margin:0 auto;padding:0 24px}
+  .head{padding:64px 0 8px}
+  h1{font-size:clamp(34px,6vw,56px);font-weight:700;letter-spacing:-.04em;line-height:1}
+  .when{margin-top:12px;font-size:13px;color:var(--faint);font-family:var(--mono)}
+  .big{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:40px}
+  .n{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-lg);padding:26px 24px}
+  .n b{display:block;font-size:46px;font-weight:700;letter-spacing:-.04em;line-height:1;
+    font-variant-numeric:tabular-nums}
+  .n span{display:block;margin-top:8px;font-size:12.5px;font-weight:600;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--faint)}
+  .n i{display:block;margin-top:10px;font-size:12.5px;color:var(--ink2);font-style:normal}
+  h2{font-size:19px;font-weight:600;letter-spacing:-.02em;margin:44px 0 4px}
+  .sub{font-size:13px;color:var(--faint);margin-bottom:14px}
+  table{width:100%;border-collapse:collapse;font-size:14.5px}
+  th,td{text-align:left;padding:11px 4px;border-bottom:1px solid var(--line)}
+  th{font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}
+  td.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--mono)}
+  .bar{height:5px;border-radius:999px;background:oklch(72% .17 48);margin-top:5px}
+  .note{margin:44px 0 70px;font-size:13px;color:var(--ink2);line-height:1.6}
+  .err{color:oklch(52% .17 28)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <h1>Launch numbers</h1>
+    <div class="when" id="when">reading…</div>
+  </div>
+
+  <div class="big">
+    <div class="n"><b id="v">—</b><span>Visitors</span><i>page loads</i></div>
+    <div class="n"><b id="d">—</b><span>Downloads</span><i>zip, from the page</i></div>
+    <div class="n"><b id="i">—</b><span>Installs</span><i>the curl one-liner</i></div>
+  </div>
+
+  <h2>Where they came from</h2>
+  <div class="sub">Referring hostname only — never the full URL.</div>
+  <table><thead><tr><th>Source</th><th class="num">Visitors</th></tr></thead><tbody id="refs">
+    <tr><td colspan="2">reading…</td></tr></tbody></table>
+
+  <h2>By day</h2>
+  <div class="sub">Newest first.</div>
+  <table><thead><tr><th>Date</th><th class="num">Visitors</th><th class="num">Downloads</th><th class="num">Installs</th></tr></thead>
+  <tbody id="days"><tr><td colspan="4">reading…</td></tr></tbody></table>
+
+  <p class="note">These are the site's own tallies — no third-party analytics, no cookies,
+  nothing that identifies anyone. Counting is approximate on purpose: it is a launch-day
+  dial, not accounting. <b>Installs</b> is the number that matters most, because the curl
+  one-liner never loads the page and no JavaScript tracker can see it.</p>
+</div>
+<script>
+(function(){
+  var API = "/api/hit";
+  function n(x){ return (x||0).toLocaleString(); }
+  fetch(API, { cache: "no-store" }).then(function(r){ return r.json(); }).then(function(s){
+    document.getElementById("v").textContent = n(s.visits);
+    document.getElementById("d").textContent = n(s.downloads);
+    document.getElementById("i").textContent = n(s.installs);
+    document.getElementById("when").textContent =
+      "as of " + new Date().toLocaleString() + (s.ok ? "" : " · counter unreachable");
+
+    var refs = Object.entries(s.refs || {}).sort(function(a,b){ return b[1]-a[1]; });
+    var total = refs.reduce(function(t,r){ return t + r[1]; }, 0) || 1;
+    document.getElementById("refs").innerHTML = refs.length
+      ? refs.map(function(r){
+          return "<tr><td>" + r[0] +
+                 "<div class='bar' style='width:" + Math.max(2, r[1]/total*100) + "%'></div></td>" +
+                 "<td class='num'>" + n(r[1]) + "</td></tr>"; }).join("")
+      : "<tr><td colspan='2'>nothing yet</td></tr>";
+
+    var days = Object.entries(s.days || {}).sort(function(a,b){ return a[0]<b[0]?1:-1; });
+    document.getElementById("days").innerHTML = days.length
+      ? days.map(function(d){
+          return "<tr><td>" + d[0] + "</td><td class='num'>" + n(d[1].visits) +
+                 "</td><td class='num'>" + n(d[1].downloads) +
+                 "</td><td class='num'>" + n(d[1].installs) + "</td></tr>"; }).join("")
+      : "<tr><td colspan='4'>nothing yet</td></tr>";
+  }).catch(function(){
+    document.getElementById("when").innerHTML = "<span class='err'>could not reach the counter</span>";
+  });
+})();
+</script>
+</body>
+</html>

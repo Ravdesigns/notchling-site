@@ -9,10 +9,10 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="Notchling — something lives in your notch">
 <meta property="og:description" content="A tiny creature, a file shelf and a weather peek, tucked into your MacBook notch.">
-<meta property="og:image" content="https://notchling.vercel.app/share.png">
+<meta property="og:image" content="https://notchling.zopcloud.zop.dev/share.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta name="twitter:image" content="https://notchling.vercel.app/share.png">
+<meta name="twitter:image" content="https://notchling.zopcloud.zop.dev/share.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="assets/site.css">
 <style>
@@ -261,7 +261,7 @@
       <p style="margin-top:18px">Or skip the warning entirely — Notchling is not notarised
         yet, and curl does not quarantine what it fetches:</p>
       <div class="cmd">
-        <code id="curlcmd">curl -fsSL https://notchling.vercel.app/get.sh | bash</code>
+        <code id="curlcmd">curl -fsSL https://notchling.zopcloud.zop.dev/get.sh | bash</code>
         <button class="cpy" id="copycurl" type="button">Copy</button>
       </div>
       <p class="fine" style="margin-top:9px">get.sh is 27 readable lines.
@@ -354,6 +354,30 @@
       document.body.removeChild(ta);
     }
   });
+})();
+</script>
+
+<script>
+/* Notchling's own tally — no third-party analytics, no cookies, no identifiers.
+   It records three numbers (a visit, a download, an install) and the referring
+   HOSTNAME only. Fire-and-forget: if the counter is down, nothing here notices,
+   and the download link is a plain href that never waits on it. */
+(function(){
+  var C = "https://notchling.vercel.app/api/hit";
+  function hit(e, extra){
+    try {
+      var u = C + "?e=" + e + (extra || "");
+      if (navigator.sendBeacon) navigator.sendBeacon(u);
+      else fetch(u, { method: "POST", mode: "no-cors", keepalive: true });
+    } catch (_) {}
+  }
+  var ref = "";
+  try { if (document.referrer) ref = "&r=" + encodeURIComponent(document.referrer); } catch (_) {}
+  hit("visit", ref);
+  document.addEventListener("click", function(ev){
+    var a = ev.target.closest && ev.target.closest('a[href$=".zip"]');
+    if (a) hit("download");
+  }, true);
 })();
 </script>
 </body>
