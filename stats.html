@@ -36,6 +36,7 @@
   <div class="head">
     <h1>Launch numbers</h1>
     <div class="when" id="when">reading…</div>
+    <div class="when" id="alltime"></div>
   </div>
 
   <div class="big">
@@ -69,6 +70,18 @@
     document.getElementById("i").textContent = n(s.installs);
     document.getElementById("when").textContent =
       "as of " + new Date().toLocaleString() + (s.ok ? "" : " · counter unreachable");
+
+    /* A launch-day cutoff means these tiles read zero until launch morning, which
+       looks identical to a counter that quietly does not work. So the page also
+       asks for the all-time figure and says so plainly: proof the pipe is open
+       before the numbers that matter start arriving. */
+    fetch(API + "?since=all", { cache: "no-store" }).then(function(r){ return r.json(); }).then(function(a){
+      var el = document.getElementById("alltime");
+      if (!el) return;
+      el.textContent = "Tiles count from " + (s.since || "the start")
+        + ". All time, including pre-launch tests: " + n(a.visits) + " visitors, "
+        + n(a.downloads) + " downloads, " + n(a.installs) + " installs.";
+    }).catch(function(){});
 
     var refs = Object.entries(s.refs || {}).sort(function(a,b){ return b[1]-a[1]; });
     var total = refs.reduce(function(t,r){ return t + r[1]; }, 0) || 1;
