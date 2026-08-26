@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wandered off — Deskmates</title>
+<meta name="description" content="This page is not here, but one of the creatures is.">
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23efece6'/><rect x='5' y='13' width='6' height='6' rx='1.5' fill='%23ff8a3d'/><rect x='13' y='13' width='6' height='6' rx='1.5' fill='%237fb4ff'/><rect x='21' y='13' width='6' height='6' rx='1.5' fill='%2379d268'/></svg>">
+<link rel="stylesheet" href="/assets/site.css">
+<style>
+  .lost{min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:40px 28px}
+  .code{font-size:13px;font-weight:600;letter-spacing:.14em;color:var(--faint)}
+  .lost h1{font-size:clamp(32px,5.4vw,54px);max-width:20ch;margin:14px auto 0}
+  .lost p{color:var(--ink2);font-size:18px;max-width:40ch;margin:16px auto 0}
+  .pen{position:relative;width:220px;height:96px;margin:34px auto 6px}
+  .critter{position:absolute;bottom:0;left:0;width:64px;image-rendering:pixelated;
+    filter:drop-shadow(0 10px 14px oklch(20% .03 62/.18))}
+  .ground{position:absolute;bottom:0;left:0;right:0;height:1px;background:var(--line)}
+  .zzz{position:absolute;bottom:52px;font-size:13px;font-weight:700;color:var(--faint);opacity:0}
+</style>
+</head>
+<body>
+<div class="lost">
+  <div class="code">404</div>
+  <h1>This one wandered off.</h1>
+  <p>The page is not here. A sprout is, though, and it seems unbothered.</p>
+
+  <div class="pen" aria-hidden="true">
+    <img class="critter" id="c" src="/crew/img/sprout.png" alt="">
+    <span class="zzz" id="z">z</span>
+    <span class="ground"></span>
+  </div>
+
+  <div class="cta">
+    <a class="btn" href="/index.html">Back to the shelf</a>
+    <a class="btn light" href="/crew/index.html">See Crew</a>
+  </div>
+</div>
+
+<script>
+(function(){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var c=document.getElementById('c'), z=document.getElementById('z');
+  var pos=0, dir=1, f=0, idleAt=null;
+  setInterval(function(){
+    /* it paces the pen, then stops for a nap, then paces again */
+    if(idleAt){
+      if(Date.now()-idleAt > 4200){ idleAt=null; z.style.opacity=0; }
+      else { c.src='/crew/img/sprout-sleep.png'; z.style.opacity=0.9;
+             z.style.left=(pos+30)+'px'; return; }
+    }
+    pos += 1.6*dir;
+    if(pos>150){pos=150;dir=-1; if(Math.random()<0.6) idleAt=Date.now();}
+    if(pos<0){pos=0;dir=1; if(Math.random()<0.6) idleAt=Date.now();}
+    f^=1;
+    c.src='/crew/img/sprout'+(f?'-walk.png':'.png');
+    c.style.transform='translateX('+pos+'px) scaleX('+dir+')';
+  },190);
+})();
+</script>
+</body>
+</html>

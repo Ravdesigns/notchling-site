@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notchling — something lives in your notch</title>
+<meta name="description" content="A tiny creature, a file shelf and a weather peek, all tucked into your MacBook notch. Free for macOS.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='25' font-size='26'>🐣</text></svg>">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Notchling — something lives in your notch">
+<meta property="og:description" content="A tiny creature, a file shelf and a weather peek, tucked into your MacBook notch.">
+<meta property="og:image" content="https://notchling.vercel.app/share.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:image" content="https://notchling.vercel.app/share.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="assets/site.css">
+<style>
+  /* ── the demo ────────────────────────────────────────────────────────────
+     The creature IS the notch, so the notch element itself grows and shows the
+     face. Every measurement below is the app's own (Views.swift): 30pt eyes,
+     22pt apart, a 14×2.4 mouth slit that opens to 40×30. Sizes are declared as
+     custom properties and switched by [data-toy], so every state is legible
+     with motion off. */
+  .screen{margin:34px auto 0;max-width:720px;background:oklch(21% .012 62);border-radius:18px 18px 8px 8px;
+    border:1px solid oklch(30% .01 62);padding:0 0 24px;box-shadow:var(--shadow);overflow:hidden;
+    --nw:190px; --nh:30px; --eye:0; --mw:0px; --mh:0px; --lid:0}
+  .screen[data-toy="critter"]{--nw:252px; --nh:88px; --eye:1; --mw:12px; --mh:2.2px}
+  .screen[data-toy="files"]  {--nw:330px; --nh:182px; --eye:1; --mw:38px; --mh:28px}
+  .screen[data-toy="weather"]{--nw:330px; --nh:104px}
+  .screen[data-toy="hide"]   {--nw:190px; --nh:34px}
+
+  /* the mock is a screen, not a black box: a faint desktop wash under the notch,
+     quiet enough that the creature is still the only thing you look at */
+  /* a real screen does not change size when the notch does, so this is fixed at the
+     tallest state. That also removes a layout transition the system forbids. */
+  .bar{position:relative;height:206px;display:flex;justify-content:center;align-items:flex-start;
+    background:radial-gradient(120% 90% at 50% 118%, oklch(31% .022 62) 0%, oklch(23% .014 62) 46%, oklch(20% .012 62) 100%)}
+  .bar::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:oklch(100% 0 0/.05)}
+  /* Deliberate exception to "never animate layout": the notch growing IS the product.
+     `contain` keeps the reflow inside the mock so it stays cheap. */
+  .notch{position:relative;width:var(--nw);height:var(--nh);background:oklch(9% .006 62);
+    contain:layout paint;
+    border-radius:0 0 20px 20px;display:flex;flex-direction:column;align-items:center;
+    padding-top:26px;box-sizing:border-box;overflow:hidden;
+    border-bottom:1px solid oklch(100% 0 0/.13);
+    transition:width .5s var(--out),height .5s var(--out)}
+
+  /* the face and the sky are mutually exclusive layers: one fades out as the other
+     fades in, so no state can ever double-expose mid-transition */
+  .face{display:flex;flex-direction:column;align-items:center;opacity:1;
+    transition:opacity .26s var(--out)}
+  .screen[data-toy="weather"] .face,.screen[data-toy="hide"] .face{opacity:0}
+  .eyes{display:flex;gap:20px;flex:none}
+  .eye{position:relative;width:26px;height:26px;border-radius:50%;overflow:hidden;flex:none;
+    background:radial-gradient(circle at 42% 36%, oklch(100% 0 0) 0%, oklch(86% 0 0) 100%);
+    transform:scale(var(--eye));transform-origin:50% 0;
+    transition:transform .5s var(--out)}
+  /* pupil: deep centre, catchlight, and a soft rim bounce — the app's own eye */
+  .eye i{position:absolute;left:50%;top:50%;width:44%;height:44%;margin:-22% 0 0 -22%;border-radius:50%;
+    background:radial-gradient(circle, oklch(24% 0 0) 0%, oklch(0% 0 0) 62%);
+    transition:transform .42s var(--out)}
+  .eye i::before,.eye i::after{content:"";position:absolute;border-radius:50%;background:oklch(100% 0 0)}
+  .eye i::before{width:34%;height:34%;left:13%;top:11%;opacity:.95}
+  .eye i::after{width:16%;height:16%;left:62%;top:64%;opacity:.22}
+  /* the lid is the notch's own black, so a blink reads as the face closing */
+  .eye u{position:absolute;left:-3px;right:-3px;top:0;height:calc(var(--lid) * 100%);
+    background:oklch(9% .006 62);transition:height .1s linear}
+  .screen[data-toy="critter"] .eye u,.screen[data-toy="files"] .eye u{--lid:.12}
+  .notch.blink .eye u{--lid:1}
+  .notch.down .eye i{transform:translateY(22%)}
+
+  .mouth{position:relative;flex:none;margin-top:8px;width:var(--mw);height:var(--mh);border-radius:999px;
+    background:oklch(21% .07 22);opacity:.55;
+    transition:width .42s var(--out),height .42s var(--out),opacity .42s var(--out),transform .18s var(--out)}
+  .screen[data-toy="files"] .mouth{opacity:1;
+    background:radial-gradient(circle, oklch(42% .13 22) 0%, oklch(18% .07 22) 85%);
+    box-shadow:0 0 12px oklch(60% .18 25/.35), inset 0 1px 0 oklch(100% 0 0/.16)}
+  .screen[data-toy="files"] .mouth::after{content:"";position:absolute;left:50%;bottom:5px;
+    width:20px;height:8px;margin-left:-10px;border-radius:999px;background:oklch(63% .14 22/.9)}
+  .notch.gulp .mouth{transform:scaleY(.35)}
+
+  /* what it is holding */
+  .held{display:flex;gap:7px;margin-top:10px;opacity:0;transform:translateY(6px);
+    transition:opacity .3s,transform .4s var(--out);pointer-events:none}
+  .screen[data-toy="files"].fed .held{opacity:1;transform:none}
+  .chip{width:36px;height:42px;border-radius:8px;background:oklch(96% .006 62);
+    box-shadow:0 6px 14px -6px oklch(0% 0 0/.6);display:flex;align-items:flex-end;padding:4px;
+    font-size:8px;line-height:1.15;color:var(--ink2);font-family:var(--mono);overflow:hidden}
+  /* not .badge — that name belongs to the shared pricing badge, which is absolutely
+     positioned and would fly this to the corner */
+  .count{align-self:center;font-size:10px;font-weight:700;color:oklch(100% 0 0);
+    background:oklch(72% .17 48/.9);border-radius:999px;padding:2px 7px;flex:none}
+
+  /* the weather scene, the app's own sky wash */
+  .wx{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:space-between;
+    padding:0 20px 13px;opacity:0;transition:opacity .3s var(--out) .16s;
+    background:linear-gradient(oklch(9% .006 62) 0 8%, oklch(16% .03 250) 34%, oklch(22% .04 250) 62%, oklch(30% .05 60) 100%)}
+  .screen[data-toy="weather"] .wx{opacity:1}
+  .screen:not([data-toy="weather"]) .wx{transition-delay:0s}
+  .wx .t{font-size:30px;font-weight:600;letter-spacing:-.03em;color:oklch(97% .004 62)}
+  .wx .place{font-size:12px;color:oklch(78% .01 62);letter-spacing:.04em;text-transform:uppercase}
+  .sun{position:absolute;left:50%;top:34px;width:22px;height:22px;margin-left:-11px;border-radius:50%;
+    background:radial-gradient(circle at 42% 38%, oklch(97% .06 92), oklch(78% .16 62));
+    box-shadow:0 0 26px 10px oklch(80% .14 62/.28)}
+
+  /* the file that gets fed to it */
+  .drop{position:absolute;left:50%;top:132px;width:52px;height:64px;margin-left:-26px;
+    background:var(--panel);border:1px solid var(--line);border-radius:9px;
+    box-shadow:0 14px 26px -12px oklch(20% .03 62/.5);
+    font-family:var(--mono);font-size:9px;color:var(--ink2);
+    display:flex;align-items:flex-end;padding:6px;opacity:0;pointer-events:none;
+    transition:transform .62s var(--out),opacity .3s}
+  .drop.fly{opacity:1;transform:translateY(-84px) scale(.34)}
+
+  .toys{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;padding:20px 16px 0}
+  .tb{background:oklch(27% .012 62);border:1px solid oklch(36% .012 62);color:oklch(88% .006 62);
+    border-radius:999px;padding:6px 14px;font-size:12.5px;font-family:var(--sans);cursor:pointer;
+    transition:background .16s,border-color .16s,color .16s}
+  .tb:hover{border-color:oklch(58% .012 62)}
+  .tb:focus-visible{outline:2px solid oklch(96% .004 62);outline-offset:3px}
+  .tb[aria-pressed="true"]{background:oklch(96% .004 62);color:oklch(21% .012 62);border-color:oklch(96% .004 62)}
+  .tb.act{border-color:oklch(72% .17 48/.55);color:oklch(84% .12 62)}
+  .tb.act:hover{border-color:oklch(72% .17 48)}
+  .caption{margin-top:14px;font-size:13px;color:var(--faint);text-align:center}
+
+  @media(max-width:560px){
+    .screen{--nw:170px}
+    .screen[data-toy="critter"]{--nw:224px}
+    .screen[data-toy="files"]{--nw:290px}
+    .screen[data-toy="weather"]{--nw:290px}
+    .bar{height:196px}
+  }
+  @media(prefers-reduced-motion:reduce){
+    .notch,.eye,.eye i,.eye u,.mouth,.held,.drop,.wx{transition:none}
+  }
+
+  /* terminal install: the Gatekeeper-free path, same pattern as the Crew page */
+  .cmd{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-top:12px;
+    background:oklch(24% .008 62);border:1px solid oklch(32% .01 62);border-radius:12px;padding:10px 12px}
+  /* the command is the trust artifact — it must be readable in full, so it wraps
+     rather than truncating with an ellipsis */
+  .cmd code{font-family:var(--mono);font-size:11px;line-height:1.5;color:oklch(88% .01 92);
+    white-space:normal;word-break:break-all;user-select:all}
+  .cpy{flex:none;font-family:var(--sans);font-size:11.5px;font-weight:700;letter-spacing:.04em;
+    border:1px solid oklch(45% .02 62);background:transparent;color:oklch(88% .01 92);
+    border-radius:999px;padding:4px 11px;cursor:pointer}
+  .cpy:hover{background:oklch(32% .01 62)}
+  .sha{display:block;font-family:var(--mono);font-size:9.5px;color:var(--faint);
+    margin-top:9px;word-break:break-all;user-select:all}
+</style>
+</head>
+<body data-product="Notchling" data-mail="sisodia.ravindra10@gmail.com">
+
+<a class="skip" href="#main">Skip to content</a>
+
+<nav><div class="wrap">
+  <a class="back" href="https://crew-deskmates.vercel.app/">← all widgets</a>
+  <div class="navlinks">
+    <a href="#toys">Toys</a><a href="#get">Get it</a>
+    <a class="btn buy" data-buy="free" style="padding:9px 18px">Download</a>
+  </div>
+</div></nav>
+
+<main id="main">
+<header class="hero"><div class="wrap">
+  <div class="eyebrow">For the notch you already paid for</div>
+  <h1>Something lives up there now.</h1>
+  <p class="sub">Your MacBook notch is dead space. Notchling puts a small creature in it that holds your files: drag one near and it opens its mouth, keeps it, and gives it back when you drag it out. Or switch to the weather. Right-click to swap.</p>
+
+  <div class="screen" id="screen" data-toy="critter">
+    <div class="bar">
+      <div class="notch" id="notch">
+        <div class="face">
+          <div class="eyes">
+            <span class="eye"><i></i><u></u></span>
+            <span class="eye"><i></i><u></u></span>
+          </div>
+          <div class="mouth"></div>
+          <div class="held">
+            <span class="chip">brief.pdf</span>
+            <span class="chip">logo.svg</span>
+            <span class="chip">notes.md</span>
+            <span class="count">3</span>
+          </div>
+        </div>
+        <div class="wx" aria-hidden="true">
+          <span class="sun"></span>
+          <span class="t">21°</span>
+          <span class="place">Bengaluru</span>
+        </div>
+      </div>
+      <div class="drop" id="drop">brief.pdf</div>
+    </div>
+    <div class="toys">
+      <div role="group" aria-label="What lives in the notch" style="display:flex;gap:7px">
+        <button class="tb" data-toy="critter" aria-pressed="true">Critter</button>
+        <button class="tb" data-toy="weather" aria-pressed="false">Weather</button>
+        <button class="tb" data-toy="hide" aria-pressed="false">Hide</button>
+      </div>
+      <button class="tb act" id="feed" type="button">Feed it a file</button>
+    </div>
+  </div>
+  <p class="caption">Go on, feed it something. In the app you drag a real file at the notch.</p>
+
+  <div class="cta">
+    <a class="btn buy" data-buy="free">Download free</a>
+    <a href="#toys" class="btn text">See the toys →</a>
+  </div>
+  <div class="micro">macOS 13+ · Apple Silicon or Intel · <span id="herosize">900 KB</span> · works on any Mac, best with a notch</div>
+</div></header>
+
+<section><div class="wrap">
+  <p class="statement reveal">The notch is the one part of your screen that is always visible. It may as well hold <b>something you like</b>.</p>
+</div></section>
+
+<section id="toys"><div class="wrap">
+  <div class="center reveal"><div class="eyebrow">What it does all day</div>
+    <h2 style="margin-top:11px">Pick what lives up there</h2></div>
+  <div class="feats">
+    <div class="feat big reveal"><div class="ic">🗂️</div><div>
+      <h3>It holds your things in its mouth</h3>
+      <p>Drag a file, a link, a line of text, or a screenshot straight off the floating
+      thumbnail. The mouth opens, it swallows, and it hands everything back whenever you
+      want it. Then right-click a held image and it will <b>chew</b> — to JPEG, to PNG,
+      smaller, or read the words out of a screenshot for you. All on your own Mac. Those
+      last few are what other notch apps charge ten to thirty dollars for.</p></div></div>
+    <div class="feat reveal"><div class="ic">🐣</div><h3>A someone, not a something</h3><p>It watches your cursor, blinks, and naps when you do. Drag it sideways to reach whatever fell behind it; it drifts home on its own.</p></div>
+    <div class="feat reveal"><div class="ic">🔋</div><h3>It feels how your Mac feels</h3><p>Plugged in, its cheeks flush warm. Battery low, it yawns. Camera on, it shuts its eyes. Caps Lock, offline, a stuffed disk — it notices, and never says a word.</p></div>
+    <div class="feat reveal"><div class="ic">⛅</div><h3>Your sky, small</h3><p>A breathing sun, a cratered moon, rain that splashes on the lip, forked lightning. Right-click to switch — or to hide it down to a bare notch.</p></div>
+    <div class="feat reveal"><div class="ic">🤖</div><h3>It watches your agents</h3><p>Running Claude Code? An ember pulse while your agents work, and when one gets stuck waiting on you it glances down. Click, and you are in that terminal.</p></div>
+  </div>
+</div></section>
+
+<section id="get" class="center"><div class="wrap reveal">
+  <h2>Move something in</h2>
+  <p class="lead">Free. Native Swift, no account, nothing leaves your Mac.</p>
+  <div class="cta" style="margin-top:24px">
+    <a class="btn buy" data-buy="free">Download Notchling</a>
+    <a class="btn light" href="https://crew-deskmates.vercel.app/crew/">See Crew →</a>
+  </div>
+  <div class="micro">Not notarised yet — the download sheet has a one-line terminal install that skips the warning entirely, with the SHA-256 beside it.</div>
+</div></section>
+
+</main>
+
+<div class="modal" id="modal" hidden>
+  <div class="sheet">
+    <button class="x" id="mx" aria-label="Close">✕</button>
+    <div id="m-free">
+      <div class="peek">🐣</div>
+      <h3>Download Notchling</h3>
+      <p>Free, forever. macOS 13+, Apple Silicon or Intel.</p>
+      <ol>
+        <li>Unzip and drag <b>Notchling</b> to /Applications.</li>
+        <li>First launch: right-click it → <b>Open</b>.</li>
+        <li>Right-click the notch for the weather, timers, and the rest.</li>
+      </ol>
+      <a class="btn" href="Notchling.zip" download>Download Notchling.zip</a>
+      <p class="fine" id="dlsize">900 KB · your browser may warn about an unsigned app</p>
+      <p style="margin-top:18px">Or skip the warning entirely — Notchling is not notarised
+        yet, and curl does not quarantine what it fetches:</p>
+      <div class="cmd">
+        <code id="curlcmd">curl -fsSL https://notchling.vercel.app/get.sh | bash</code>
+        <button class="cpy" id="copycurl" type="button">Copy</button>
+      </div>
+      <p class="fine" style="margin-top:9px">get.sh is 27 readable lines.
+        <a href="get.sh" style="color:var(--ink2);text-decoration:underline">Read it first</a> if you like.</p>
+      <span class="sha" id="zipsha">sha256 e56163bdb1609fb5b3fe49ee649442df7a84251dfc88355835d1e2259a874a7b</span>
+    </div>
+  </div>
+</div>
+
+<footer><div class="wrap">
+  <div>Notchling, a tenant for your notch</div>
+  <div><a href="https://crew-deskmates.vercel.app/">← all widgets</a> · made by Rav</div>
+</div></footer>
+
+<script src="assets/site.js"></script>
+<script>
+(function(){
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var screenEl = document.getElementById('screen');
+  var notch = document.getElementById('notch');
+  var drop = document.getElementById('drop');
+  var feed = document.getElementById('feed');
+  var modes = [].slice.call(document.querySelectorAll('.tb[data-toy]'));
+  /* a generation counter, not a timer handle: any new interaction invalidates every
+     step still queued from the last one, however deeply nested it was */
+  var gen = 0;
+
+  function setMode(name){
+    gen++;
+    modes.forEach(function(b){ b.setAttribute('aria-pressed', String(b.dataset.toy === name)); });
+    screenEl.classList.remove('fed');
+    notch.classList.remove('gulp');
+    drop.classList.remove('fly');
+    screenEl.dataset.toy = name;
+  }
+  modes.forEach(function(b){ b.addEventListener('click', function(){ setMode(b.dataset.toy); }); });
+
+  /* the file goes in, the mouth gulps, the chips appear — the app's own sequence */
+  feed.addEventListener('click', function(){
+    setMode('files');
+    var mine = gen;
+    modes.forEach(function(b){ b.setAttribute('aria-pressed', 'false'); });
+    var step = function(fn, ms){ setTimeout(function(){ if (mine === gen) fn(); }, ms); };
+
+    if (reduce){                              // no flight: land straight on the result
+      screenEl.classList.add('fed');
+      step(function(){ setMode('critter'); }, 2600);
+      return;
+    }
+    void drop.offsetWidth;                    // restart the transition from the top
+    requestAnimationFrame(function(){ if (mine === gen) drop.classList.add('fly'); });
+    step(function(){
+      drop.classList.remove('fly');
+      notch.classList.add('gulp');
+      screenEl.classList.add('fed');
+      step(function(){ notch.classList.remove('gulp'); }, 260);
+      step(function(){ setMode('critter'); }, 2700);
+    }, 640);
+  });
+
+  if (reduce) return;
+  /* it blinks, and every so often glances down at the strip below — both real */
+  setInterval(function(){
+    var t = screenEl.dataset.toy;
+    if (t !== 'critter' && t !== 'files') return;
+    notch.classList.add('blink');
+    setTimeout(function(){ notch.classList.remove('blink'); }, 120);
+  }, 3400);
+  setInterval(function(){
+    if (screenEl.dataset.toy !== 'critter') return;
+    notch.classList.add('down');
+    setTimeout(function(){ notch.classList.remove('down'); }, 900);
+  }, 9200);
+})();
+</script>
+
+<script>
+(function(){
+  var btn=document.getElementById('copycurl'), code=document.getElementById('curlcmd');
+  if(!btn||!code) return;
+  btn.addEventListener('click',function(){
+    var t=code.textContent;
+    function done(){ btn.textContent='Copied'; setTimeout(function(){ btn.textContent='Copy'; },1400); }
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(t).then(done,fallback);
+    } else { fallback(); }
+    function fallback(){
+      var ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta);
+      ta.select(); try{ document.execCommand('copy'); done(); }catch(e){ }
+      document.body.removeChild(ta);
+    }
+  });
+})();
+</script>
+</body>
+</html>
