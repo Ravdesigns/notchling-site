@@ -47,7 +47,7 @@ function refHost(raw) {
 // that silently does not work: exactly the thing you do not want to discover at
 // 12:31 on launch morning. `?since=all` counts everything, test events included.
 async function tally(since = COUNT_FROM) {
-  const out = { visits: 0, downloads: 0, installs: 0, refs: {}, days: {}, since };
+  const out = { visits: 0, downloads: 0, installs: 0, pros: 0, refs: {}, days: {}, since };
   let cursor;
   do {
     const page = await list({ prefix: `${ROOT}/`, limit: 1000, cursor });
@@ -58,9 +58,13 @@ async function tally(since = COUNT_FROM) {
       const [, , date, event, host] = p;
       if (!EVENTS.includes(event)) continue;
       if (date < since) continue;   // pre-launch test noise
-      const key = event === 'visit' ? 'visits' : event === 'download' ? 'downloads' : 'installs';
+      // An explicit map, not a ternary chain. The chain fell through to 'installs'
+      // for anything it did not recognise, so adding a fourth event silently
+      // inflated the install count instead of counting itself.
+      const key = { visit: 'visits', download: 'downloads', install: 'installs', pro: 'pros' }[event];
+      if (!key) continue;
       out[key]++;
-      out.days[date] = out.days[date] || { visits: 0, downloads: 0, installs: 0 };
+      out.days[date] = out.days[date] || { visits: 0, downloads: 0, installs: 0, pros: 0 };
       out.days[date][key]++;
       if (event === 'visit') out.refs[host] = (out.refs[host] || 0) + 1;
     }
