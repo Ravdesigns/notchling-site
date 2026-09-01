@@ -148,6 +148,15 @@
   .cpy:hover{background:oklch(32% .01 62)}
   .sha{display:block;font-family:var(--mono);font-size:9.5px;color:var(--faint);
     margin-top:9px;word-break:break-all;user-select:all}
+  /* The Product Hunt badge. Somebody else's artwork, so it gets air around it rather
+     than a frame: no card, no border, nothing that pretends it is ours. */
+  .phbadge{display:inline-block;margin-top:26px;line-height:0;
+    transition:transform .18s cubic-bezier(.22,1,.36,1)}
+  .phbadge img{width:250px;height:54px;max-width:100%}
+  .phbadge:hover{transform:translateY(-2px)}
+  .phbadge:focus-visible{outline:2px solid var(--ink);outline-offset:6px;border-radius:6px}
+  @media (max-width:560px){ .phbadge{margin-top:22px} }
+
   /* Pro marker in the feature grid. It exists because the grid used to describe
      the paid features in the same voice as the free ones, and pricing further down
      then contradicted it. Quiet on purpose: a label, not a badge. */
@@ -222,6 +231,19 @@
     <a href="#toys" class="btn text">See the toys →</a>
   </div>
   <div class="micro">macOS 13+ · Apple Silicon or Intel · <span id="herosize">775 KB</span> · works on any Mac, best with a notch</div>
+
+  <!-- The only third-party request on this page, and it earns it: for an app that is
+       not notarised yet, a Product Hunt feature is the strongest trust signal there
+       is. Deliberately NOT self-hosted even though that would be faster, because the
+       SVG carries a live vote count and a local copy would freeze the number and go
+       quietly stale. Explicit width and height so it cannot shift the layout while it
+       loads, low priority so it never races the page's own render. -->
+  <a class="phbadge" href="https://www.producthunt.com/products/notchling-lives-in-your-notch?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-notchling"
+     target="_blank" rel="noopener noreferrer">
+    <img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1232843&amp;theme=light&amp;t=1788276717776"
+         alt="Notchling is featured on Product Hunt" width="250" height="54"
+         fetchpriority="low" decoding="async">
+  </a>
 </div></header>
 
 <section><div class="wrap">
