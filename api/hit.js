@@ -26,7 +26,10 @@ const ROOT = 'notchling/ev';
 // the same thing as far as the dashboard is concerned.
 // Launch day. Anything earlier is my own testing.
 const COUNT_FROM = '2026-08-28';
-const EVENTS = ['visit', 'download', 'install'];
+// `pro` is intent, not a sale: somebody opened the Pro pane. Without it there is no
+// way to tell a tier nobody wants from a tier nobody can figure out how to buy, and
+// those two need completely different responses.
+const EVENTS = ['visit', 'download', 'install', 'pro'];
 
 // Coarse hostname only — never a full URL or query string, which can carry
 // personal data we have no business storing.

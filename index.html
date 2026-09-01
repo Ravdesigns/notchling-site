@@ -471,6 +471,14 @@
    and the download link is a plain href that never waits on it. */
 (function(){
   var C = "https://notchling.vercel.app/api/hit";
+  /* Pro intent. Fired when somebody opens the Pro pane, which is the only signal
+     that separates "nobody wants this tier" from "nobody can work out how to buy
+     it". Those two problems have opposite fixes, so guessing is not good enough. */
+  document.addEventListener("click", function (e) {
+    var t = e.target && e.target.closest && e.target.closest('[data-buy="pro"]');
+    if (!t) return;
+    try { navigator.sendBeacon(C + "?e=pro"); } catch (err) {}
+  }, true);
   function hit(e, extra){
     try {
       var u = C + "?e=" + e + (extra || "");
