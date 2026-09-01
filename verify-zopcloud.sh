@@ -20,7 +20,7 @@ PAGE=$(curl -s -m 25 "$H/")
 grep -q 'id="pricing"' <<<"$PAGE" && ok "pricing section present" || no "NO pricing section: still the old commit"
 grep -q 'id="m-pro"'   <<<"$PAGE" && ok "Pro pane present"        || no "no Pro pane"
 grep -q 'class="tag">Pro<' <<<"$PAGE" && ok "Pro tag in the feature grid" || no "no Pro tag"
-[ "$(curl -s -m 20 "$H/version.txt" | tr -d '[:space:]')" = "1.9.3" ] && ok "version.txt 1.9.3" || no "version.txt is $(curl -s -m 20 "$H/version.txt" | tr -d '[:space:]')"
+[ "$(curl -s -m 20 "$H/version.txt" | tr -d '[:space:]')" = "1.10.0" ] && ok "version.txt 1.10.0" || no "version.txt is $(curl -s -m 20 "$H/version.txt" | tr -d '[:space:]')"
 
 echo "▸ the trust artefact"
 SHOWN=$(grep -o 'sha256 [a-f0-9]\{64\}' <<<"$PAGE" | head -1 | cut -d' ' -f2)
@@ -34,7 +34,7 @@ T=$(mktemp -d); curl -fsSL -m 60 "$H/Notchling.zip" -o "$T/n.zip" 2>/dev/null
 if unzip -q "$T/n.zip" -d "$T" 2>/dev/null; then
   APP="$T/Notchling/Notchling.app"
   VER=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Contents/Info.plist" 2>/dev/null)
-  [ "$VER" = "1.9.3" ] && ok "bundle is v1.9.3" || no "bundle is v$VER"
+  [ "$VER" = "1.10.0" ] && ok "bundle is v1.10.0" || no "bundle is v$VER"
   A=$(lipo -archs "$APP/Contents/MacOS/Notchling" 2>/dev/null)
   [[ "$A" == *x86_64* && "$A" == *arm64* ]] && ok "universal ($A)" || no "not universal: $A"
   strings "$APP/Contents/MacOS/Notchling" 2>/dev/null | grep -q "notchling.licence" && ok "licensing is in the binary" || no "NO licensing in the binary: old build"
