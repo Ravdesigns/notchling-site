@@ -31,6 +31,21 @@ const COUNT_FROM = '2026-08-28';
 // those two need completely different responses.
 const EVENTS = ['visit', 'download', 'install', 'pro'];
 
+// Hosts that are US. A `visit` whose referrer is one of these is not a visitor: it
+// is a reload, an internal navigation, or me poking at my own page. On 9 Sep the
+// counter logged 714 visits of which 691 were self-referred, which made a dead day
+// look like a bigger spike than launch day and nearly went out as a public chart.
+//
+// Filtered at READ time on purpose. The store is append-only and the Blob token is
+// injected at runtime, so nothing can retroactively delete events. Excluding them
+// here makes every past tally honest too, without touching a single stored record.
+const SELF_HOSTS = new Set([
+  'notchling.zopcloud.zop.dev',
+  'notchling.vercel.app',
+  'localhost',
+  '127.0.0.1',
+]);
+
 // Coarse hostname only — never a full URL or query string, which can carry
 // personal data we have no business storing.
 function refHost(raw) {
@@ -47,7 +62,9 @@ function refHost(raw) {
 // that silently does not work: exactly the thing you do not want to discover at
 // 12:31 on launch morning. `?since=all` counts everything, test events included.
 async function tally(since = COUNT_FROM) {
-  const out = { visits: 0, downloads: 0, installs: 0, pros: 0, refs: {}, days: {}, since };
+  // selfVisits is reported, not hidden: a number that suddenly balloons is the
+  // signal that something on the page is reloading itself.
+  const out = { visits: 0, downloads: 0, installs: 0, pros: 0, selfVisits: 0, refs: {}, days: {}, since };
   let cursor;
   do {
     const page = await list({ prefix: `${ROOT}/`, limit: 1000, cursor });
@@ -63,6 +80,10 @@ async function tally(since = COUNT_FROM) {
       // inflated the install count instead of counting itself.
       const key = { visit: 'visits', download: 'downloads', install: 'installs', pro: 'pros' }[event];
       if (!key) continue;
+      // Self-referred visits are noise. Downloads and installs are kept whatever
+      // the referrer, because both take a deliberate act (a click, or piping a
+      // script to bash) and neither can happen by reloading.
+      if (event === 'visit' && SELF_HOSTS.has(host)) { out.selfVisits++; continue; }
       out[key]++;
       out.days[date] = out.days[date] || { visits: 0, downloads: 0, installs: 0, pros: 0 };
       out.days[date][key]++;

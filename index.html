@@ -140,12 +140,28 @@
     background:oklch(24% .008 62);border:1px solid oklch(32% .01 62);border-radius:12px;padding:10px 12px}
   /* the command is the trust artifact — it must be readable in full, so it wraps
      rather than truncating with an ellipsis */
+  /* `.sheet code` in site.css styles inline code chips in prose: light background,
+     light border. Correct there, catastrophic here. This block lives inside .sheet
+     and `.cmd code` only ever set a colour, so the chip background won unopposed
+     and put oklch(88%) text on an oklch(96%) field. Measured 1.29:1, against the
+     11.46:1 this was designed for. Reset what the chip rule imposes. */
   .cmd code{font-family:var(--mono);font-size:11px;line-height:1.5;color:oklch(88% .01 92);
-    white-space:normal;word-break:break-all;user-select:all}
+    background:none;border:0;padding:0;
+    /* break-all split the URL mid-domain, "…zop." then "dev/get.sh", which reads
+       as two different hosts on a command people are being asked to pipe to bash.
+       Wrap at the spaces instead and keep the hostname in one piece. */
+    white-space:normal;overflow-wrap:break-word;word-break:normal;user-select:all}
   .cpy{flex:none;font-family:var(--sans);font-size:11.5px;font-weight:700;letter-spacing:.04em;
     border:1px solid oklch(45% .02 62);background:transparent;color:oklch(88% .01 92);
     border-radius:999px;padding:4px 11px;cursor:pointer}
   .cpy:hover{background:oklch(32% .01 62)}
+  /* user-select:all so one click grabs the whole address even if the copy
+     button's clipboard call is blocked, which it can be. */
+  .pickme{font-family:var(--mono);font-size:12px;color:var(--ink);user-select:all;
+    background:var(--soft);border:1px solid var(--line);border-radius:5px;padding:1px 5px}
+  #promailwrap .cpy{color:var(--ink);border-color:var(--line);margin-left:5px;
+    font-size:10.5px;padding:2px 8px;vertical-align:1px}
+  #promailwrap .cpy:hover{background:var(--soft)}
   .sha{display:block;font-family:var(--mono);font-size:9.5px;color:var(--faint);
     margin-top:9px;word-break:break-all;user-select:all}
   /* The Product Hunt badge. Somebody else's artwork, so it gets air around it rather
@@ -329,14 +345,28 @@
         watchers.</p>
       <ol>
         <li>Install the free app first. Pro unlocks inside it.</li>
-        <li>Right-click the notch &rarr; <b>Enter licence key…</b> and copy the
-          8-character code it shows for this Mac.</li>
+        <li>Right-click the notch &rarr; <b>Unlock Pro &middot; $12 once…</b>
+          &rarr; <b>Enter licence key…</b>, then press <b>Copy this Mac's code</b>.
+          &ldquo;Enter licence key…&rdquo; is not in the notch menu on its own: it
+          sits one level in, behind Unlock Pro. Leaving that step out is why the
+          first two buyers could not find their code.</li>
         <li>Mail me that code. I send back a key that works only on your Mac.</li>
       </ol>
-      <a class="btn" id="probtn" href="mailto:sisodia.ravindra10@gmail.com?subject=Notchling%20Pro%3A%20I%27d%20like%20a%20key%20(%2412)&body=Hi%20Ravindra%2C%0A%0AI%27d%20like%20a%20Notchling%20Pro%20key.%0AMy%20Mac%27s%208-character%20code%20is%3A%20%0A%0A(Right-click%20the%20notch%20%E2%86%92%20Enter%20licence%20key%E2%80%A6%20to%20find%20it.)%0A%0AThanks%21%0A">Email me for a key</a>
+      <a class="btn" id="probtn" href="mailto:sisodia.ravindra10@gmail.com?subject=Notchling%20Pro%3A%20I%27d%20like%20a%20key%20(%2412)&body=Hi%20Ravindra%2C%0A%0AI%27d%20like%20a%20Notchling%20Pro%20key.%0AMy%20Mac%27s%208-character%20code%20is%3A%20%0A%0A(Right-click%20the%20notch%20%E2%86%92%20Unlock%20Pro%20%C2%B7%20%2412%20once%E2%80%A6%20%E2%86%92%20Enter%20licence%20key%E2%80%A6%20%E2%86%92%20Copy%20this%20Mac%27s%20code.)%0A%0AThanks%21%0A">Email me for a key</a>
+      <!-- A mailto link is dead on any machine with no mail handler, which is most
+           people who live in Gmail in a browser tab. It fails SILENTLY: nothing
+           opens, nothing errors, and until now the address appeared nowhere else on
+           the page, so a buyer who clicked and got nothing had no way to reach me at
+           all. A buyer reported exactly this. Same rule as the Crew donation id: a
+           thing that takes money must never be un-copyable. -->
+      <p class="fine" id="promailwrap" style="margin-top:11px">Button did nothing?
+        Your browser may have no mail app. Mail
+        <span class="pickme" id="promail">sisodia.ravindra10@gmail.com</span>
+        <button class="cpy" id="copymail" type="button">Copy</button>
+      </p>
       <p class="fine" style="margin-top:9px">No card form, no processor yet, so it's a person
         replying to you. Usually within a day.</p>
-      <p class="fine">Already have a key? Right-click the notch &rarr; Enter licence key…</p>
+      <p class="fine">Already have a key? Right-click the notch &rarr; Unlock Pro &middot; $12 once… &rarr; Enter licence key…</p>
     </div>
     <div id="m-free">
       <div class="peek">🐣</div>
@@ -373,13 +403,39 @@
    is minted by hand against the buyer's machine code. When a processor exists, set
    CHECKOUT in site.js and this becomes a redirect instead. */
 (function(){
+  var m = document.getElementById('promail'), cb = document.getElementById('copymail');
+  if (m && cb) cb.addEventListener('click', function(){
+    var t = m.textContent.trim(), done = function(){ cb.textContent = 'Copied'; setTimeout(function(){ cb.textContent = 'Copy'; }, 1600); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(t).then(done, fallback);
+    } else { fallback(); }
+    function fallback(){
+      try {
+        var ta = document.createElement('textarea');
+        ta.value = t; ta.setAttribute('readonly',''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        var ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        if (ok) return done();
+      } catch (e) {}
+      // last resort: select it in place so a manual copy still works
+      var r = document.createRange(); r.selectNodeContents(m);
+      var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      cb.textContent = 'Select + copy';
+      setTimeout(function(){ cb.textContent = 'Copy'; }, 2200);
+    }
+  });
+
   var b = document.getElementById('probtn');
   if (!b) return;
   var subject = encodeURIComponent("Notchling Pro: I'd like a key ($12)");
   var body = encodeURIComponent(
     "Hi Ravindra,\n\nI'd like Notchling Pro ($12 one-time).\n\n" +
-    "Name (for the licence):\n" +
-    "This Mac's 8-character code (right-click the notch \u2192 Enter licence key\u2026):\n\n" +
+    "Name (for the licence):\n\n" +
+    "This Mac's 8-character code:\n\n" +
+    "(Find it in the app: right-click the notch \u2192 Unlock Pro \u00b7 $12 once\u2026 \u2192\n" +
+    " Enter licence key\u2026 \u2192 Copy this Mac's code. The key only works on\n" +
+    " the Mac that code came from, so I cannot issue one without it.)\n\n" +
     "Thanks!");
   b.href = "mailto:" + (document.body.dataset.mail || "") + "?subject=" + subject + "&body=" + body;
 })();
@@ -488,7 +544,24 @@
   }
   var ref = "";
   try { if (document.referrer) ref = "&r=" + encodeURIComponent(document.referrer); } catch (_) {}
-  hit("visit", ref);
+  /* Two guards, because without them a reload and a visitor are the same event.
+     On 9 Sep this logged 714 visits, 691 of them referred by this very page.
+       1. same-origin referrer means an internal navigation or a bounce back from
+          the zip or get.sh, not somebody arriving.
+       2. one visit per tab session, so refreshing does not re-count.
+     Downloads and installs stay unguarded: both need a deliberate act and neither
+     can be triggered by a reload. */
+  var internal = false;
+  try {
+    internal = !!document.referrer &&
+               new URL(document.referrer).host === location.host;
+  } catch (_) {}
+  var already = false;
+  try { already = sessionStorage.getItem("nl.counted") === "1"; } catch (_) {}
+  if (!internal && !already) {
+    hit("visit", ref);
+    try { sessionStorage.setItem("nl.counted", "1"); } catch (_) {}
+  }
   document.addEventListener("click", function(ev){
     var a = ev.target.closest && ev.target.closest('a[href$=".zip"]');
     if (a) hit("download");
