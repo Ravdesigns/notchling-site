@@ -139,8 +139,17 @@ export default async function handler(req, res) {
       cacheControlMaxAge: 31536000,   // the blob never changes; cache it forever
     });
     return res.status(200).json({ ok: true, recorded: e });
-  } catch {
-    // A broken counter must never break the page or the installer.
-    return res.status(200).json({ ok: false });
+  } catch (err) {
+    // A broken counter must never break the page or the installer, so this still
+    // returns 200 and the page never notices. But a bare `catch {}` meant the
+    // counter died silently on 9 Sep and nobody knew for eight days: every POST
+    // answered {ok:false} and nothing said why. Name the failure so the next one
+    // is one curl away from a diagnosis. `put` throwing while `list` still works
+    // points at the Blob token or the store, not at this code.
+    return res.status(200).json({
+      ok: false,
+      why: String(err && err.name || 'Error'),
+      detail: String(err && err.message || '').slice(0, 160),
+    });
   }
 }
